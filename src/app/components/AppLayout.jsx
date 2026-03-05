@@ -7,6 +7,7 @@ export function AppLayout({
   children,
   variant = "default",
   showSearch = true,
+  headerSearchMobile = true,
   searchQuery = "",
   onSearchChange,
   onSearch,
@@ -75,9 +76,13 @@ export function AppLayout({
               )}
             </div>
 
-            {/* Center - search */}
+            {/* Center - search (hidden on mobile when headerSearchMobile=false) */}
             {showSearch && (
-              <Form onSubmit={handleSearch} className="flex-grow-1 mx-4 mx-lg-5" style={{ maxWidth: "36rem" }}>
+              <Form
+                onSubmit={handleSearch}
+                className={`flex-grow-1 mx-4 mx-lg-5 ${!headerSearchMobile ? "d-none d-md-flex" : ""}`}
+                style={{ maxWidth: "36rem" }}
+              >
                 <div className="search-input-wrap position-relative">
                   <Search
                     className="search-icon position-absolute"
@@ -89,7 +94,7 @@ export function AppLayout({
                     value={searchQuery}
                     onChange={(e) => onSearchChange?.(e.target.value)}
                     placeholder="Search documents, keywords, or metadata..."
-                    className="form-control"
+                    className="form-control search-control"
                   />
                 </div>
               </Form>

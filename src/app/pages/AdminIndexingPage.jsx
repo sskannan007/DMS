@@ -19,16 +19,8 @@ const mockIndexedDocuments = [
 
 export function AdminIndexingPage() {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
-    }
-  };
 
   const getStatusBadge = (status) => {
     const variant = status === "indexed" ? "badge-indexed" : status === "processing" ? "badge-processing" : "badge-failed";
@@ -51,13 +43,7 @@ export function AdminIndexingPage() {
   };
 
   return (
-    <AppLayout
-      variant="back"
-      showSearch={true}
-      searchQuery={searchQuery}
-      onSearchChange={setSearchQuery}
-      onSearch={handleSearch}
-    >
+    <AppLayout variant="back" showSearch={false}>
       <Container fluid className="container-page-padding">
         <div className="admin-header d-flex flex-column flex-md-row align-items-stretch align-items-md-start justify-content-between gap-3 gap-md-4 mb-4 mb-md-5">
           <div>

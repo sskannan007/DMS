@@ -48,7 +48,7 @@ body {
 /* Search input */
 .search-input-wrap {
   position: relative;
-  max-width: 36rem;
+  width: 100%;
 }
 .search-input-wrap .form-control {
   padding-left: 2.75rem;
@@ -241,6 +241,11 @@ body {
   }
   .admin-mobile-item:last-child {
     border-bottom: none !important;
+  }
+}
+@media (max-width: 768px) {
+.search-control.form-control {
+    padding: 0.75rem 0.75rem 0.75rem 2.75rem !important;
   }
 }
 @media (min-width: 768px) {

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { FileText, Upload as UploadIcon, CheckCircle, XCircle, Loader } from "lucide-react";
 import { AppLayout } from "../components/AppLayout";
+import { SearchBar } from "../components/SearchBar";
 import { Container, Row, Col, Card, Form, Button } from "react-bootstrap";
 
 const departments = ["Finance", "Marketing", "HR", "Legal", "Product", "IT", "Sales", "Operations"];
@@ -92,19 +93,28 @@ export function UploadPage() {
     <AppLayout
       variant="back"
       showSearch={true}
+      headerSearchMobile={false}
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
       onSearch={handleSearch}
     >
-      <Container className="container-page-padding" style={{ maxWidth: "42rem" }}>
-        <div className="mb-5">
-          <h1 className="h3 h4-sm fw-bold mb-1" style={{ color: "var(--foreground)" }}>
-            Upload Document
-          </h1>
-          <p className="text-muted">Add a new document to the system with metadata for indexing</p>
+      <Container fluid className="container-page-padding">
+        <div className="mb-4 d-md-none">
+          <SearchBar
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onSearch={handleSearch}
+          />
         </div>
+        <div style={{ maxWidth: "42rem" }}>
+          <div className="mb-5">
+            <h1 className="h3 h4-sm fw-bold mb-1" style={{ color: "var(--foreground)" }}>
+              Upload Document
+            </h1>
+            <p className="text-muted">Add a new document to the system with metadata for indexing</p>
+          </div>
 
-        <Card className="card-custom border shadow-sm">
+          <Card className="card-custom border shadow-sm">
           <Card.Body className="p-5">
             <Form onSubmit={handleSubmit}>
               <Form.Group className="mb-4">
@@ -227,6 +237,7 @@ export function UploadPage() {
             </Form>
           </Card.Body>
         </Card>
+        </div>
       </Container>
     </AppLayout>
   );

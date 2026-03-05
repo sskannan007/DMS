@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { Download, FileText, Calendar, Building2, FileType, CheckCircle } from "lucide-react";
 import { AppLayout } from "../components/AppLayout";
+import { SearchBar } from "../components/SearchBar";
 import { Container, Row, Col, Card, Button } from "react-bootstrap";
 
 const mockDocument = {
@@ -31,11 +32,19 @@ export function DocumentPreviewPage() {
     <AppLayout
       variant="back"
       showSearch={true}
+      headerSearchMobile={false}
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
       onSearch={handleSearch}
     >
       <Container fluid className="container-page-padding">
+        <div className="mb-4 d-md-none">
+          <SearchBar
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onSearch={handleSearch}
+          />
+        </div>
         <Row className="g-4">
           <Col xs={12} lg={8}>
             <Card className="card-custom p-5 min-vh-100 border">
