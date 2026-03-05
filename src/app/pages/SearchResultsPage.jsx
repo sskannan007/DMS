@@ -4,95 +4,16 @@ import { FileText, Download, X, SearchX, SlidersHorizontal } from "lucide-react"
 import { AppLayout } from "../components/AppLayout";
 import { SearchBar } from "../components/SearchBar";
 import { Container, Row, Col, Card, Form, Button, Modal } from "react-bootstrap";
+import { documents } from "../data/filesManifest";
 
-const mockDocuments = [
-  {
-    id: 1,
-    title: "Annual Budget Report 2026",
-    department: "Finance",
-    date: "2026-03-01",
-    type: "Report",
-    status: "Active",
-    snippet:
-      "This comprehensive budget report outlines the financial allocations for all departments in fiscal year 2026.",
-  },
-  {
-    id: 2,
-    title: "Marketing Campaign Analysis Q4 2025",
-    department: "Marketing",
-    date: "2026-02-28",
-    type: "Analysis",
-    status: "Active",
-    snippet: "Detailed analysis of Q4 marketing campaigns showing ROI metrics and conversion data.",
-  },
-  {
-    id: 3,
-    title: "Employee Onboarding Guide",
-    department: "HR",
-    date: "2026-02-27",
-    type: "Guide",
-    status: "Active",
-    snippet: "Complete onboarding guide for new employees including orientation schedules.",
-  },
-  {
-    id: 4,
-    title: "Software License Agreement - Enterprise Suite",
-    department: "Legal",
-    date: "2026-02-26",
-    type: "Contract",
-    status: "Active",
-    snippet: "Enterprise software licensing agreement covering terms and conditions.",
-  },
-  {
-    id: 5,
-    title: "Product Roadmap Q1 2026",
-    department: "Product",
-    date: "2026-02-25",
-    type: "Planning",
-    status: "Active",
-    snippet: "Strategic product development roadmap for Q1 2026.",
-  },
-  {
-    id: 6,
-    title: "Security Policy Update March 2026",
-    department: "IT",
-    date: "2026-02-24",
-    type: "Policy",
-    status: "Active",
-    snippet: "Updated security policies addressing data protection.",
-  },
-  {
-    id: 7,
-    title: "Client Proposal - Digital Transformation",
-    department: "Sales",
-    date: "2026-02-23",
-    type: "Proposal",
-    status: "Active",
-    snippet: "Comprehensive proposal for client digital transformation.",
-  },
-  {
-    id: 8,
-    title: "Quarterly Performance Review Template",
-    department: "HR",
-    date: "2026-02-22",
-    type: "Template",
-    status: "Active",
-    snippet: "Standardized template for conducting quarterly performance reviews.",
-  },
-];
-
-const departments = ["All Departments", "Finance", "Marketing", "HR", "Legal", "Product", "IT", "Sales"];
-const documentTypes = ["All Types", "Report", "Analysis", "Guide", "Contract", "Planning", "Policy", "Proposal", "Template"];
-const statuses = ["All Status", "Active", "Archived", "Draft"];
+const documentTypes = ["All Types", "act", "GO", "judgements", "policy"];
 
 export function SearchResultsPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
   const [dateRange, setDateRange] = useState("all");
-  const [selectedDepartment, setSelectedDepartment] = useState("All Departments");
   const [selectedType, setSelectedType] = useState("All Types");
-  const [selectedStatus, setSelectedStatus] = useState("All Status");
   const [sortBy, setSortBy] = useState("relevance");
   const [activeFilters, setActiveFilters] = useState([]);
   const [showFilterModal, setShowFilterModal] = useState(false);
@@ -109,18 +30,39 @@ export function SearchResultsPage() {
     }
   };
 
-  const filteredDocuments = mockDocuments.filter((doc) => {
+  const filteredDocuments = documents.filter((doc) => {
     const query = searchQuery.trim().toLowerCase();
     const matchesSearch =
       !query ||
       doc.title.toLowerCase().includes(query) ||
-      doc.department.toLowerCase().includes(query) ||
       doc.type.toLowerCase().includes(query) ||
-      doc.snippet.toLowerCase().includes(query);
-    const matchesDepartment = selectedDepartment === "All Departments" || doc.department === selectedDepartment;
+      doc.filename.toLowerCase().includes(query);
     const matchesType = selectedType === "All Types" || doc.type === selectedType;
-    const matchesStatus = selectedStatus === "All Status" || doc.status === selectedStatus;
-    return matchesSearch && matchesDepartment && matchesType && matchesStatus;
+    const matchesDateRange =
+      !doc.date ||
+      dateRange === "all" ||
+      (() => {
+        const docDate = new Date(doc.date);
+        const now = new Date();
+        if (dateRange === "today") return docDate.toDateString() === now.toDateString();
+        if (dateRange === "week") {
+          const weekAgo = new Date(now);
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          return docDate >= weekAgo;
+        }
+        if (dateRange === "month") {
+          const monthAgo = new Date(now);
+          monthAgo.setMonth(monthAgo.getMonth() - 1);
+          return docDate >= monthAgo;
+        }
+        if (dateRange === "year") {
+          const yearAgo = new Date(now);
+          yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+          return docDate >= yearAgo;
+        }
+        return true;
+      })();
+    return matchesSearch && matchesType && matchesDateRange;
   });
 
   const sortedDocuments = [...filteredDocuments].sort((a, b) => {
@@ -131,9 +73,7 @@ export function SearchResultsPage() {
 
   const clearFilters = () => {
     setDateRange("all");
-    setSelectedDepartment("All Departments");
     setSelectedType("All Types");
-    setSelectedStatus("All Status");
     setActiveFilters([]);
   };
 
@@ -178,22 +118,7 @@ export function SearchResultsPage() {
                 </Form.Select>
 
                 <h3 className="h6 fw-semibold mb-3" style={{ color: "var(--foreground)" }}>
-                  Department
-                </h3>
-                <Form.Select
-                  value={selectedDepartment}
-                  onChange={(e) => setSelectedDepartment(e.target.value)}
-                  className="mb-4"
-                >
-                  {departments.map((dept) => (
-                    <option key={dept} value={dept}>
-                      {dept}
-                    </option>
-                  ))}
-                </Form.Select>
-
-                <h3 className="h6 fw-semibold mb-3" style={{ color: "var(--foreground)" }}>
-                  Document Type
+                  Document Type (File Type)
                 </h3>
                 <Form.Select
                   value={selectedType}
@@ -203,21 +128,6 @@ export function SearchResultsPage() {
                   {documentTypes.map((type) => (
                     <option key={type} value={type}>
                       {type}
-                    </option>
-                  ))}
-                </Form.Select>
-
-                <h3 className="h6 fw-semibold mb-3" style={{ color: "var(--foreground)" }}>
-                  Status
-                </h3>
-                <Form.Select
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="mb-4"
-                >
-                  {statuses.map((status) => (
-                    <option key={status} value={status}>
-                      {status}
                     </option>
                   ))}
                 </Form.Select>
@@ -285,7 +195,7 @@ export function SearchResultsPage() {
                   <Card
                     key={doc.id}
                     className="card-custom p-4 card-hover border"
-                    onClick={() => navigate(`/document/${doc.id}`)}
+                    onClick={() => navigate(`/document/${encodeURIComponent(doc.id)}`)}
                   >
                     <Card.Body className="p-0">
                       <div className="d-flex justify-content-between gap-4">
@@ -293,19 +203,19 @@ export function SearchResultsPage() {
                           <h3 className="h5 fw-semibold mb-2" style={{ color: "var(--foreground)" }}>
                             {doc.title}
                           </h3>
-                          <div className="small text-muted mb-2">
-                            {doc.date} · {doc.department} · {doc.type}
+                          <div className="small text-muted mb-0">
+                            {doc.date ? `${doc.date.slice(0, 4)} · ` : ""}{doc.type}
                           </div>
-                          <p className="small line-clamp-2 mb-0">{doc.snippet}</p>
                         </div>
-                        <Button
-                          variant="link"
-                          className="p-2 flex-shrink-0 text-decoration-none"
+                        <a
+                          href={doc.url}
+                          download={doc.filename}
+                          className="p-2 flex-shrink-0 text-decoration-none d-inline-flex"
                           style={{ color: "var(--primary)" }}
                           onClick={(e) => e.stopPropagation()}
                         >
                           <Download size={20} />
-                        </Button>
+                        </a>
                       </div>
                     </Card.Body>
                   </Card>
@@ -347,19 +257,7 @@ export function SearchResultsPage() {
               </Form.Select>
             </div>
             <div className="mb-4">
-              <Form.Label className="fw-semibold small">Department</Form.Label>
-              <Form.Select
-                value={selectedDepartment}
-                onChange={(e) => setSelectedDepartment(e.target.value)}
-                className="mt-1"
-              >
-                {departments.map((dept) => (
-                  <option key={dept} value={dept}>{dept}</option>
-                ))}
-              </Form.Select>
-            </div>
-            <div className="mb-4">
-              <Form.Label className="fw-semibold small">Document Type</Form.Label>
+              <Form.Label className="fw-semibold small">Document Type (File Type)</Form.Label>
               <Form.Select
                 value={selectedType}
                 onChange={(e) => setSelectedType(e.target.value)}
@@ -367,18 +265,6 @@ export function SearchResultsPage() {
               >
                 {documentTypes.map((type) => (
                   <option key={type} value={type}>{type}</option>
-                ))}
-              </Form.Select>
-            </div>
-            <div className="mb-4">
-              <Form.Label className="fw-semibold small">Status</Form.Label>
-              <Form.Select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="mt-1"
-              >
-                {statuses.map((status) => (
-                  <option key={status} value={status}>{status}</option>
                 ))}
               </Form.Select>
             </div>

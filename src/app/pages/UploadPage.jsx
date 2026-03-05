@@ -6,7 +6,7 @@ import { SearchBar } from "../components/SearchBar";
 import { Container, Row, Col, Card, Form, Button } from "react-bootstrap";
 
 const departments = ["Finance", "Marketing", "HR", "Legal", "Product", "IT", "Sales", "Operations"];
-const documentTypes = ["Report", "Analysis", "Guide", "Contract", "Planning", "Policy", "Proposal", "Template", "Memo"];
+const documentTypes = ["act", "GO", "judgements", "policy"];
 const statuses = ["Active", "Draft", "Review"];
 
 export function UploadPage() {
@@ -183,7 +183,7 @@ export function UploadPage() {
                 </Col>
                 <Col md={6}>
                   <Form.Group>
-                    <Form.Label htmlFor="type">Type</Form.Label>
+                    <Form.Label htmlFor="type">Type (File Type)</Form.Label>
                     <Form.Select
                       id="type"
                       value={type}

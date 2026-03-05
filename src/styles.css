@@ -226,6 +226,16 @@ body {
   }
 }
 
+/* Document preview: 1rem padding below 991px */
+@media (max-width: 991px) {
+  .doc-review {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+  }
+}
+
 /* 330px–450px: smaller quick filter count, remove margin above cards */
 @media (min-width: 330px) and (max-width: 450px) {
   .quick-filter-count {
