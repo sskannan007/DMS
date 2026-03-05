@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { FileText, Download, X, SearchX, SlidersHorizontal } from "lucide-react";
 import { AppLayout } from "../components/AppLayout";
+import { SearchBar } from "../components/SearchBar";
 import { Container, Row, Col, Card, Form, Button, Modal } from "react-bootstrap";
 
 const mockDocuments = [
@@ -103,6 +104,9 @@ export function SearchResultsPage() {
 
   const handleSearch = (e) => {
     e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+    }
   };
 
   const filteredDocuments = mockDocuments.filter((doc) => {
@@ -140,11 +144,20 @@ export function SearchResultsPage() {
   return (
     <AppLayout
       variant="back"
+      showSearch={true}
+      headerSearchMobile={false}
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
       onSearch={handleSearch}
     >
       <Container fluid className="container-page-padding">
+        <div className="mb-4 d-md-none">
+          <SearchBar
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onSearch={handleSearch}
+          />
+        </div>
         <Row className="g-4">
           <Col xs={12} md={3} lg={3} className="order-2 order-md-1 d-none d-md-block">
             <Card className="card-custom p-4 sticky-top" style={{ top: "6rem" }}>
