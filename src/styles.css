@@ -115,6 +115,18 @@ body {
   box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05);
 }
 
+/* Quick filter card: curved decorative shape in top-right corner */
+.quick-filter-corner-shape {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 5rem;
+  height: 5rem;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 0 0 0 100%;
+  pointer-events: none;
+}
+
 .card-custom {
   border-radius: 1rem;
   border: 1px solid var(--border);
@@ -221,6 +233,10 @@ body {
   }
   .welcome-section {
     margin-bottom: 0 !important;
+  }
+  .quick-filter-corner-shape {
+    right: -1.5rem;
+    top: -1.5rem;
   }
 }
 

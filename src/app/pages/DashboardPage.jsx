@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { FileText, Clock, TrendingUp, Upload, FileSignature, BarChart3 } from "lucide-react";
+import { FileText, Clock, Upload, FileSignature, BarChart3 } from "lucide-react";
 import { AppLayout } from "../components/AppLayout";
 import { getRecentSearches, clearRecentSearches, initRecentSearchesIfEmpty } from "../utils/recentSearches";
 import { Container, Row, Col, Card, Button } from "react-bootstrap";
@@ -71,11 +71,15 @@ export function DashboardPage() {
             return (
               <Col key={index} xs={6} lg={3}>
                 <Card
-                  className="card-custom p-4 h-100 card-hover cursor-pointer border"
+                  className="card-custom hii p-4 h-100 card-hover cursor-pointer border position-relative overflow-hidden"
                   onClick={() =>
                     navigate(`/search?filter=${filter.name.toLowerCase().replace(" ", "")}`)
                   }
                 >
+                  <div
+                    className="quick-filter-corner-shape"
+                    aria-hidden
+                  />
                   <Card.Body className="p-0">
                     <div className="d-flex align-items-center justify-content-between mb-3">
                       <div
@@ -84,7 +88,6 @@ export function DashboardPage() {
                       >
                         <Icon size={20} />
                       </div>
-                      <TrendingUp size={16} className="text-success opacity-0" />
                     </div>
                     <div className="h5 fw-bold mb-1 quick-filter-count" style={{ color: "var(--foreground)" }}>
                       {filter.count}
