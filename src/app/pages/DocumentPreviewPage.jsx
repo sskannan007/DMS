@@ -21,14 +21,89 @@ export function DocumentPreviewPage() {
 
   const zoomPluginRef = useRef(null);
   const pageNavPluginRef = useRef(null);
+  const scaleRef = useRef(1);
+  const viewerContainerRef = useRef(null);
+  const pinchStartRef = useRef({ dist: 0, scale: 1 });
+
   if (!zoomPluginRef.current) zoomPluginRef.current = zoomPlugin();
   if (!pageNavPluginRef.current) pageNavPluginRef.current = pageNavigationPlugin();
   const zoomPluginInstance = zoomPluginRef.current;
   const pageNavigationPluginInstance = pageNavPluginRef.current;
+  const { zoomTo } = zoomPluginInstance;
+
+  const clampScale = (s) => Math.min(3, Math.max(0.5, s));
 
   useEffect(() => {
     if (doc) addRecentDocument(doc);
   }, [id]);
+
+  useEffect(() => {
+    const el = viewerContainerRef.current;
+    if (!el || !doc) return;
+
+    let wheelRaf = null;
+    let pendingSteps = 0;
+    const ZOOM_STEP = 0.07;
+
+    const applyZoom = () => {
+      if (pendingSteps === 0) {
+        wheelRaf = null;
+        return;
+      }
+      const step = pendingSteps > 0 ? 1 : -1;
+      pendingSteps -= step;
+      const next = clampScale(scaleRef.current + step * ZOOM_STEP);
+      scaleRef.current = next;
+      zoomTo(next);
+      wheelRaf = requestAnimationFrame(applyZoom);
+    };
+
+    const onWheel = (e) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      pendingSteps += e.deltaY > 0 ? -1 : 1;
+      pendingSteps = Math.max(-5, Math.min(5, pendingSteps));
+      if (!wheelRaf) wheelRaf = requestAnimationFrame(applyZoom);
+    };
+
+    const getTouchDist = (touches) =>
+      Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+
+    const onTouchStart = (e) => {
+      if (e.touches.length === 2) {
+        pinchStartRef.current = { dist: getTouchDist(e.touches), scale: scaleRef.current };
+      }
+    };
+
+    const onTouchMove = (e) => {
+      if (e.touches.length !== 2) return;
+      e.preventDefault();
+      const { dist: startDist, scale: startScale } = pinchStartRef.current;
+      const currDist = getTouchDist(e.touches);
+      const ratio = currDist / startDist;
+      const next = clampScale(startScale * ratio);
+      scaleRef.current = next;
+      zoomTo(next);
+      pinchStartRef.current = { dist: currDist, scale: next };
+    };
+
+    const onTouchEnd = (e) => {
+      if (e.touches.length < 2) pinchStartRef.current = { dist: 0, scale: scaleRef.current };
+    };
+
+    el.addEventListener("wheel", onWheel, { passive: false });
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd, { passive: true });
+
+    return () => {
+      if (wheelRaf) cancelAnimationFrame(wheelRaf);
+      el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [doc, zoomTo]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -105,10 +180,15 @@ export function DocumentPreviewPage() {
                   </div>
                 </div>
                 <Worker workerUrl="/pdf.worker.min.js">
-                  <div className="pdf-viewer-container flex-grow-1" style={{ height: "550px", width: "100%", minHeight: "350px" }}>
+                  <div
+                    ref={viewerContainerRef}
+                    className="pdf-viewer-container flex-grow-1"
+                    style={{ height: "550px", width: "100%", minHeight: "350px" }}
+                  >
                     <Viewer
                       fileUrl={doc.url}
                       plugins={[zoomPluginInstance, pageNavigationPluginInstance]}
+                      onZoom={(e) => { scaleRef.current = e.scale; }}
                       renderLoader={(percentages) => (
                         <div className="d-flex flex-column align-items-center justify-content-center h-100 gap-2" style={{ minHeight: "400px" }}>
                           <Loader2 size={40} className="text-primary spinner-icon" />
