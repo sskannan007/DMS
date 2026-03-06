@@ -71,8 +71,9 @@ export function DocumentPreviewPage() {
           />
         </div>
         <Row className="g-4">
-          <Col xs={12} lg={8}>
-            <Card className="card-custom doc-review p-3 min-vh-100 border">
+          <Col xs={12} lg={8} className="order-2 order-lg-1">
+            <Card className="card-custom doc-review p-3 border">
+              <h5 className="doc-review-title">Document Preview</h5>
               <div
                 className="d-flex flex-column rounded-3 overflow-hidden"
                 style={{ minHeight: "600px", borderColor: "var(--border)" }}
@@ -123,24 +124,24 @@ export function DocumentPreviewPage() {
             </Card>
           </Col>
 
-          <Col xs={12} lg={4}>
-            <Card className="card-custom p-4 sticky-top border" style={{ top: "6rem" }}>
+          <Col xs={12} lg={4} className="order-1 order-lg-2">
+            <Card className="card-custom doc-title-card p-4 sticky-top border" style={{ top: "6rem" }}>
               <Card.Body>
-                <h2 className="h5 fw-semibold mb-3" style={{ color: "var(--foreground)" }}>
-                  {doc.title}
+                <h2 className="h5 fw-semibold mb-3 doc-title-right" style={{ color: "var(--foreground)" }}>
+                  File Name: {doc.title}
                 </h2>
 
-                <div className="border-top pt-4 mb-4">
-                  <div className="d-flex gap-3 mb-3">
-                    <Calendar size={20} className="text-muted flex-shrink-0 mt-1" />
-                    <div>
+                <div className="border-top pt-4 mb-4 d-flex flex-wrap align-items-center justify-content-center gap-4">
+                  <div className="d-flex align-items-center gap-2">
+                    <Calendar size={20} className="text-muted flex-shrink-0" />
+                    <div className="text-center">
                       <div className="small text-muted">Year</div>
                       <div className="small fw-medium">{doc.date ? doc.date.slice(0, 4) : "-"}</div>
                     </div>
                   </div>
-                  <div className="d-flex gap-3 mb-3">
-                    <FileType size={20} className="text-muted flex-shrink-0 mt-1" />
-                    <div>
+                  <div className="d-flex align-items-center gap-2">
+                    <FileType size={20} className="text-muted flex-shrink-0" />
+                    <div className="text-center">
                       <div className="small text-muted">Type</div>
                       <div className="small fw-medium">{doc.type}</div>
                     </div>
@@ -156,9 +157,6 @@ export function DocumentPreviewPage() {
                     <Download size={16} />
                     Download
                   </a>
-                  <Button variant="outline-primary" onClick={() => navigate(-1)}>
-                    Back
-                  </Button>
                 </div>
               </Card.Body>
             </Card>
