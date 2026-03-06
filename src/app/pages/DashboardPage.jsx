@@ -197,9 +197,11 @@ export function DashboardPage() {
               </Col>
             )) : (
               <Col xs={12}>
-                <Card className="card-custom p-5 text-center border">
-                  <FileText size={48} className="text-muted mb-2" />
-                  <p className="small text-muted mb-0">No recent documents. Preview documents from search to see them here.</p>
+                <Card className="card-custom p-5 border">
+                  <div className="d-flex flex-column align-items-center justify-content-center text-center">
+                    <FileText size={48} className="text-muted mb-2" />
+                    <p className="small text-muted mb-0">No recent documents. Preview documents from search to see them here.</p>
+                  </div>
                 </Card>
               </Col>
             )}
