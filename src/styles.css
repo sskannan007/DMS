@@ -260,6 +260,12 @@ body {
     right: -1.5rem;
     top: -1.5rem;
   }
+  .doc-title-card .card-body {
+    padding: 0 !important;
+  }
+  .doc-title-right {
+    font-size: 18px;
+  }
 }
 
 /* Admin Indexing Dashboard – below 768px */

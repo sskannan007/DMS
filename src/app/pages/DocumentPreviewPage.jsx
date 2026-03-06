@@ -21,14 +21,89 @@ export function DocumentPreviewPage() {
 
   const zoomPluginRef = useRef(null);
   const pageNavPluginRef = useRef(null);
+  const scaleRef = useRef(1);
+  const viewerContainerRef = useRef(null);
+  const pinchStartRef = useRef({ dist: 0, scale: 1 });
+
   if (!zoomPluginRef.current) zoomPluginRef.current = zoomPlugin();
   if (!pageNavPluginRef.current) pageNavPluginRef.current = pageNavigationPlugin();
   const zoomPluginInstance = zoomPluginRef.current;
   const pageNavigationPluginInstance = pageNavPluginRef.current;
+  const { zoomTo } = zoomPluginInstance;
+
+  const clampScale = (s) => Math.min(3, Math.max(0.5, s));
 
   useEffect(() => {
     if (doc) addRecentDocument(doc);
   }, [id]);
+
+  useEffect(() => {
+    const el = viewerContainerRef.current;
+    if (!el || !doc) return;
+
+    let wheelRaf = null;
+    let pendingSteps = 0;
+    const ZOOM_STEP = 0.07;
+
+    const applyZoom = () => {
+      if (pendingSteps === 0) {
+        wheelRaf = null;
+        return;
+      }
+      const step = pendingSteps > 0 ? 1 : -1;
+      pendingSteps -= step;
+      const next = clampScale(scaleRef.current + step * ZOOM_STEP);
+      scaleRef.current = next;
+      zoomTo(next);
+      wheelRaf = requestAnimationFrame(applyZoom);
+    };
+
+    const onWheel = (e) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      pendingSteps += e.deltaY > 0 ? -1 : 1;
+      pendingSteps = Math.max(-5, Math.min(5, pendingSteps));
+      if (!wheelRaf) wheelRaf = requestAnimationFrame(applyZoom);
+    };
+
+    const getTouchDist = (touches) =>
+      Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+
+    const onTouchStart = (e) => {
+      if (e.touches.length === 2) {
+        pinchStartRef.current = { dist: getTouchDist(e.touches), scale: scaleRef.current };
+      }
+    };
+
+    const onTouchMove = (e) => {
+      if (e.touches.length !== 2) return;
+      e.preventDefault();
+      const { dist: startDist, scale: startScale } = pinchStartRef.current;
+      const currDist = getTouchDist(e.touches);
+      const ratio = currDist / startDist;
+      const next = clampScale(startScale * ratio);
+      scaleRef.current = next;
+      zoomTo(next);
+      pinchStartRef.current = { dist: currDist, scale: next };
+    };
+
+    const onTouchEnd = (e) => {
+      if (e.touches.length < 2) pinchStartRef.current = { dist: 0, scale: scaleRef.current };
+    };
+
+    el.addEventListener("wheel", onWheel, { passive: false });
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd, { passive: true });
+
+    return () => {
+      if (wheelRaf) cancelAnimationFrame(wheelRaf);
+      el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [doc, zoomTo]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -71,8 +146,9 @@ export function DocumentPreviewPage() {
           />
         </div>
         <Row className="g-4">
-          <Col xs={12} lg={8}>
-            <Card className="card-custom doc-review p-3 min-vh-100 border">
+          <Col xs={12} lg={8} className="order-2 order-lg-1">
+            <Card className="card-custom doc-review p-3 border">
+              <h5 className="doc-review-title">Document Preview</h5>
               <div
                 className="d-flex flex-column rounded-3 overflow-hidden"
                 style={{ minHeight: "600px", borderColor: "var(--border)" }}
@@ -104,10 +180,15 @@ export function DocumentPreviewPage() {
                   </div>
                 </div>
                 <Worker workerUrl="/pdf.worker.min.js">
-                  <div className="pdf-viewer-container flex-grow-1" style={{ height: "550px", width: "100%", minHeight: "350px" }}>
+                  <div
+                    ref={viewerContainerRef}
+                    className="pdf-viewer-container flex-grow-1"
+                    style={{ height: "550px", width: "100%", minHeight: "350px" }}
+                  >
                     <Viewer
                       fileUrl={doc.url}
                       plugins={[zoomPluginInstance, pageNavigationPluginInstance]}
+                      onZoom={(e) => { scaleRef.current = e.scale; }}
                       renderLoader={(percentages) => (
                         <div className="d-flex flex-column align-items-center justify-content-center h-100 gap-2" style={{ minHeight: "400px" }}>
                           <Loader2 size={40} className="text-primary spinner-icon" />
@@ -123,24 +204,24 @@ export function DocumentPreviewPage() {
             </Card>
           </Col>
 
-          <Col xs={12} lg={4}>
-            <Card className="card-custom p-4 sticky-top border" style={{ top: "6rem" }}>
+          <Col xs={12} lg={4} className="order-1 order-lg-2">
+            <Card className="card-custom doc-title-card p-4 sticky-top border" style={{ top: "6rem" }}>
               <Card.Body>
-                <h2 className="h5 fw-semibold mb-3" style={{ color: "var(--foreground)" }}>
-                  {doc.title}
+                <h2 className="h5 fw-semibold mb-3 doc-title-right" style={{ color: "var(--foreground)" }}>
+                  File Name: {doc.title}
                 </h2>
 
-                <div className="border-top pt-4 mb-4">
-                  <div className="d-flex gap-3 mb-3">
-                    <Calendar size={20} className="text-muted flex-shrink-0 mt-1" />
-                    <div>
+                <div className="border-top pt-4 mb-4 d-flex flex-wrap align-items-center justify-content-center gap-4">
+                  <div className="d-flex align-items-center gap-2">
+                    <Calendar size={20} className="text-muted flex-shrink-0" />
+                    <div className="text-center">
                       <div className="small text-muted">Year</div>
                       <div className="small fw-medium">{doc.date ? doc.date.slice(0, 4) : "-"}</div>
                     </div>
                   </div>
-                  <div className="d-flex gap-3 mb-3">
-                    <FileType size={20} className="text-muted flex-shrink-0 mt-1" />
-                    <div>
+                  <div className="d-flex align-items-center gap-2">
+                    <FileType size={20} className="text-muted flex-shrink-0" />
+                    <div className="text-center">
                       <div className="small text-muted">Type</div>
                       <div className="small fw-medium">{doc.type}</div>
                     </div>
@@ -156,9 +237,6 @@ export function DocumentPreviewPage() {
                     <Download size={16} />
                     Download
                   </a>
-                  <Button variant="outline-primary" onClick={() => navigate(-1)}>
-                    Back
-                  </Button>
                 </div>
               </Card.Body>
             </Card>
