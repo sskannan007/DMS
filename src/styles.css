@@ -183,6 +183,13 @@ body {
   to { transform: rotate(360deg); }
 }
 
+/* Search result highlights */
+.search-highlight {
+  background: rgba(79, 70, 229, 0.2);
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
 /* Line clamp */
 .line-clamp-2 {
   display: -webkit-box;

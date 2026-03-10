@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { FileText, Download, X, SearchX, SlidersHorizontal } from "lucide-react";
+import { FileText, Download, X, SearchX, SlidersHorizontal, Loader2 } from "lucide-react";
 import { AppLayout } from "../components/AppLayout";
 import { SearchBar } from "../components/SearchBar";
 import { Container, Row, Col, Card, Form, Button, Modal } from "react-bootstrap";
-import { documents } from "../data/filesManifest";
+import { documents, getDocumentById } from "../data/filesManifest";
+import { searchDocuments } from "../api/search";
 
 const documentTypes = ["All Types", "act", "GO", "judgements", "policy"];
 
@@ -17,11 +18,29 @@ export function SearchResultsPage() {
   const [sortBy, setSortBy] = useState("relevance");
   const [activeFilters, setActiveFilters] = useState([]);
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const [apiResults, setApiResults] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const q = searchParams.get("q");
     if (q) setSearchQuery(q);
   }, [searchParams]);
+
+  // Fetch from Elasticsearch API when search query or filters change
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q) {
+      setApiResults(null);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    searchDocuments({ query: q, type: selectedType, dateRange })
+      .then((data) => {
+        setApiResults(data);
+      })
+      .finally(() => setLoading(false));
+  }, [searchQuery, selectedType, dateRange]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -30,46 +49,68 @@ export function SearchResultsPage() {
     }
   };
 
-  const filteredDocuments = documents.filter((doc) => {
-    const query = searchQuery.trim().toLowerCase();
-    const matchesSearch =
-      !query ||
-      doc.title.toLowerCase().includes(query) ||
-      doc.type.toLowerCase().includes(query) ||
-      doc.filename.toLowerCase().includes(query);
-    const matchesType = selectedType === "All Types" || doc.type === selectedType;
-    const matchesDateRange =
-      !doc.date ||
-      dateRange === "all" ||
-      (() => {
-        const docDate = new Date(doc.date);
-        const now = new Date();
-        if (dateRange === "today") return docDate.toDateString() === now.toDateString();
-        if (dateRange === "week") {
-          const weekAgo = new Date(now);
-          weekAgo.setDate(weekAgo.getDate() - 7);
-          return docDate >= weekAgo;
-        }
-        if (dateRange === "month") {
-          const monthAgo = new Date(now);
-          monthAgo.setMonth(monthAgo.getMonth() - 1);
-          return docDate >= monthAgo;
-        }
-        if (dateRange === "year") {
-          const yearAgo = new Date(now);
-          yearAgo.setFullYear(yearAgo.getFullYear() - 1);
-          return docDate >= yearAgo;
-        }
-        return true;
-      })();
-    return matchesSearch && matchesType && matchesDateRange;
-  });
+  // Local fallback: metadata-only filter (filename, title, type)
+  const filteredDocumentsLocal = useMemo(() => {
+    return documents.filter((doc) => {
+      const query = searchQuery.trim().toLowerCase();
+      const matchesSearch =
+        !query ||
+        doc.title.toLowerCase().includes(query) ||
+        doc.type.toLowerCase().includes(query) ||
+        doc.filename.toLowerCase().includes(query);
+      const matchesType = selectedType === "All Types" || doc.type === selectedType;
+      const matchesDateRange =
+        !doc.date ||
+        dateRange === "all" ||
+        (() => {
+          const docDate = new Date(doc.date);
+          const now = new Date();
+          if (dateRange === "today") return docDate.toDateString() === now.toDateString();
+          if (dateRange === "week") {
+            const weekAgo = new Date(now);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            return docDate >= weekAgo;
+          }
+          if (dateRange === "month") {
+            const monthAgo = new Date(now);
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            return docDate >= monthAgo;
+          }
+          if (dateRange === "year") {
+            const yearAgo = new Date(now);
+            yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+            return docDate >= yearAgo;
+          }
+          return true;
+        })();
+      return matchesSearch && matchesType && matchesDateRange;
+    });
+  }, [searchQuery, selectedType, dateRange]);
 
-  const sortedDocuments = [...filteredDocuments].sort((a, b) => {
-    if (sortBy === "date") return b.date.localeCompare(a.date);
-    if (sortBy === "title") return a.title.localeCompare(b.title);
-    return 0;
-  });
+  // Use API results when available, else local
+  const displayDocs = useMemo(() => {
+    if (apiResults && apiResults.results?.length >= 0) {
+      return apiResults.results.map((r) => {
+        const local = getDocumentById(r.id);
+        return {
+          ...r,
+          url: local?.url,
+          date: r.date || local?.date,
+        };
+      });
+    }
+    return filteredDocumentsLocal.map((doc) => ({ ...doc, highlights: [] }));
+  }, [apiResults, filteredDocumentsLocal]);
+
+  const sortedDocuments = useMemo(() => {
+    return [...displayDocs].sort((a, b) => {
+      if (sortBy === "date") return (b.date || "").localeCompare(a.date || "");
+      if (sortBy === "title") return (a.title || "").localeCompare(b.title || "");
+      return 0;
+    });
+  }, [displayDocs, sortBy]);
+
+  const totalCount = apiResults?.total ?? filteredDocumentsLocal.length;
 
   const clearFilters = () => {
     setDateRange("all");
@@ -143,7 +184,14 @@ export function SearchResultsPage() {
             <Card className="card-custom p-4 mb-4">
               <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
                 <span className="h5 fw-semibold mb-0" style={{ color: "var(--foreground)" }}>
-                  {filteredDocuments.length} {filteredDocuments.length === 1 ? "Result" : "Results"}
+                  {loading ? (
+                    <span className="d-flex align-items-center gap-2">
+                      <Loader2 size={20} className="text-primary spinner-icon" />
+                      Searching...
+                    </span>
+                  ) : (
+                    `${totalCount} ${totalCount === 1 ? "Result" : "Results"}`
+                  )}
                 </span>
                 <div className="d-flex align-items-center gap-2 flex-wrap">
                   <Button
@@ -206,16 +254,31 @@ export function SearchResultsPage() {
                           <div className="small text-muted mb-0">
                             {doc.date ? `${doc.date.slice(0, 4)} · ` : ""}{doc.type}
                           </div>
+                          {doc.highlights?.length > 0 && (
+                            <div className="small text-muted mt-2" style={{ fontSize: "0.85rem" }}>
+                              {doc.highlights.slice(0, 2).map((h, i) => (
+                                <div
+                                  key={i}
+                                  className="mb-1"
+                                  dangerouslySetInnerHTML={{
+                                    __html: h.replace(/<em>/g, '<mark class="search-highlight">').replace(/<\/em>/g, "</mark>"),
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        <a
-                          href={doc.url}
-                          download={doc.filename}
-                          className="p-2 flex-shrink-0 text-decoration-none d-inline-flex"
-                          style={{ color: "var(--primary)" }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Download size={20} />
-                        </a>
+                        {doc.url && (
+                          <a
+                            href={doc.url}
+                            download={doc.filename}
+                            className="p-2 flex-shrink-0 text-decoration-none d-inline-flex"
+                            style={{ color: "var(--primary)" }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Download size={20} />
+                          </a>
+                        )}
                       </div>
                     </Card.Body>
                   </Card>
