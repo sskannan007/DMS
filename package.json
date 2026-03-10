@@ -6,7 +6,10 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
-    "postinstall": "node -e \"require('fs').copyFileSync(require('path').join('node_modules','pdfjs-dist','build','pdf.worker.min.js'), 'public/pdf.worker.min.js')\""
+    "postinstall": "node -e \"require('fs').copyFileSync(require('path').join('node_modules','pdfjs-dist','build','pdf.worker.min.js'), 'public/pdf.worker.min.js')\"",
+    "seed": "node scripts/seed-minio-db.js",
+    "index": "node scripts/index-elasticsearch.js",
+    "server": "node server/index.js"
   },
   "dependencies": {
     "@react-pdf-viewer/core": "^3.12.0",
@@ -22,7 +25,14 @@
     "react-router": "^7.13.0"
   },
   "devDependencies": {
+    "@elastic/elasticsearch": "^8.11.0",
     "@vitejs/plugin-react": "^4.7.0",
+    "better-sqlite3": "^11.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.2",
+    "minio": "^8.0.0",
+    "pdf-parse": "^1.1.1",
     "vite": "^6.3.5"
   }
 }

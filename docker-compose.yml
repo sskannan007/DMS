@@ -1,0 +1,60 @@
+# MinIO + Elasticsearch for local testing
+# Run: docker-compose up -d
+# Then: npm run index (Elasticsearch) | npm run seed (MinIO)
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: dms-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9200/"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 45s
+
+  minio:
+    image: minio/minio:latest
+    container_name: dms-minio
+    command: server /data
+    ports:
+      - "9000:9000"
+      - "9001:9001"  # Console UI
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Optional: PostgreSQL for production-like testing
+  postgres:
+    image: postgres:15-alpine
+    container_name: dms-postgres
+    environment:
+      POSTGRES_DB: dms
+      POSTGRES_USER: dms
+      POSTGRES_PASSWORD: dms
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    profiles:
+      - full  # Only start with: docker-compose --profile full up -d
+
+volumes:
+  es_data: {}
+  minio_data: {}
+  postgres_data: {}
